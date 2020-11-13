@@ -2,6 +2,7 @@ package com.teapp.service
 
 import com.teapp.Config
 import com.teapp.models.Teahouse
+import com.teapp.service.links.references
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 
@@ -9,36 +10,24 @@ import org.jetbrains.exposed.sql.transactions.transaction
 object teahouses : Table() {
     val id: Column<Int> = integer("id").autoIncrement()
     val title: Column<String> = varchar("title", 45)
-    val longitude: Column<Double> = double("longitude")
-    val latitude: Column<Double> = double("latitude")
-    val phone: Column<String> = varchar("phone", 15)
-    val site: Column<String> = varchar("site", 150)
-    val worktime_id: Column<Int> = integer("worktime_id")
+    val address: Column<String> = varchar("address", 200)
+    val longitude: Column<Double?> = double("longitude").nullable()
+    val latitude: Column<Double?> = double("latitude").nullable()
+    val phone: Column<String?> = varchar("phone", 15).nullable()
+    val site: Column<String?> = varchar("site", 150).nullable()
+    val worktime_id: Column<Int?> = integer("worktime_id").nullable()
 
     override val primaryKey = PrimaryKey(id, name = "PK_Teahouse_ID")
-
-    fun toMap(row: ResultRow): Map<String, Any?> {
-        return mapOf(
-            "id" to row[teahouses.id],
-            "title" to row[teahouses.title],
-            "longitude" to row[teahouses.longitude],
-            "latitude" to row[teahouses.latitude],
-            "phone" to row[teahouses.phone],
-            "site" to row[teahouses.site],
-            "worktime_id" to row[teahouses.worktime_id]
-        )
-    }
 }
 
 object links : Table() {
     val id: Column<Int> = integer("id").autoIncrement()
-    val social_network_id: Column<Int> = integer("social_network_id")
+    val social_network_id: Column<Int> = (integer("social_network_id") references social_networks.id)
     val link: Column<String> = varchar("link", 300)
     val icon_url: Column<String> = varchar("icon_url", 500)
-    val teahouse_id: Column<Int> = integer("teahouse_id")
+    val teahouse_id: Column<Int> = (integer("teahouse_id") references teahouses.id)
 
     override val primaryKey = PrimaryKey(links.id, name = "PK_Link_ID")
-
 }
 
 object social_networks : Table() {
@@ -56,14 +45,18 @@ object DatabaseFactory {
 
     fun getTeahousById(id: Int): String {
         val teahouse = Teahouse(id)
-        val teahouseData = transaction {
-            teahouses.select { teahouses.id eq id }.map { teahouses.toMap(it) }
-        }[0]
-        teahouse.phone = teahouseData["phone"] as? String
-        teahouse.latitude = teahouseData["latitude"] as? Double
-        teahouse.longitude = teahouseData["longitude"] as? Double
-        teahouse.phone = teahouseData["phone"] as? String
-
+        transaction {
+            addLogger(StdOutSqlLogger)
+            val teahouseData = teahouses.select { teahouses.id eq id }.toList()
+            if (teahouseData.size == 1) {
+                teahouse.title = teahouseData[0][teahouses.title]
+                teahouse.address = teahouseData[0][teahouses.address]
+                teahouse.latitude = teahouseData[0][teahouses.latitude]
+                teahouse.longitude = teahouseData[0][teahouses.longitude]
+                teahouse.phone = teahouseData[0][teahouses.phone]
+                teahouse.site = teahouseData[0][teahouses.site]
+            }
+        }
         return teahouse.toJson()
     }
 }

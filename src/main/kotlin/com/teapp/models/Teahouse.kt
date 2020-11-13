@@ -14,7 +14,8 @@ data class Teahouse(val id: Int) {
         val teahause_id: Int? = null
     }
 
-    var title: String? = null
+    lateinit var title: String
+    lateinit var address: String
     var longitude: Double? = null
     var latitude: Double? = null
     var phone: String? = null
