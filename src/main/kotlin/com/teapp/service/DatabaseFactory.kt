@@ -2,7 +2,6 @@ package com.teapp.service
 
 import com.teapp.Config
 import com.teapp.models.Teahouse
-import com.teapp.service.links.references
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 
@@ -15,10 +14,16 @@ object teahouses : Table() {
     val latitude: Column<Double?> = double("latitude").nullable()
     val phone: Column<String?> = varchar("phone", 15).nullable()
     val site: Column<String?> = varchar("site", 150).nullable()
-    val worktime_id: Column<Int?> = integer("worktime_id").nullable()
+//    val worktime_id: Column<Int?> = (integer("worktime_id") references worktime.id).nullable()
 
     override val primaryKey = PrimaryKey(id, name = "PK_Teahouse_ID")
 }
+
+//object worktime:Table(){
+//    val id:Column<Int> = integer("id").autoIncrement()
+//    val weekdays_opening: Column<> =
+//    override val primaryKey = PrimaryKey(worktime.id, name = "PK_Worktime_ID")
+//}
 
 object links : Table() {
     val id: Column<Int> = integer("id").autoIncrement()
@@ -56,6 +61,9 @@ object DatabaseFactory {
                 teahouse.phone = teahouseData[0][teahouses.phone]
                 teahouse.site = teahouseData[0][teahouses.site]
             }
+        }
+        transaction {
+
         }
         return teahouse.toJson()
     }
