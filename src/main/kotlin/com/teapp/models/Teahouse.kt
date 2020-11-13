@@ -16,7 +16,7 @@ data class Teahouse(val id: Int) {
 
     var title: String? = null
     var longitude: Double? = null
-    var latitue: Double? = null
+    var latitude: Double? = null
     var phone: String? = null
     var site: String? = null
     var workday_opening: String? = null
