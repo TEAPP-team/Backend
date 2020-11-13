@@ -4,14 +4,10 @@ import com.google.gson.GsonBuilder
 
 data class Teahouse(val id: Int) {
     data class Link(val id: Int) {
-        data class SocialNetwork(val id: Int) {
-            val socialNetwork: String? = null
-        }
-
-        val social_network_type: String? = null
-        val link: String? = null
-        val icon_url: String? = null
-        val teahause_id: Int? = null
+        lateinit var social_network_type: String
+        lateinit var link: String
+        var icon_url: String? = null
+        var teahause_id: Int = 0
     }
 
     lateinit var title: String
