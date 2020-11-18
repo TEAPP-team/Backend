@@ -1,11 +1,14 @@
 package com.teapp
 
-import com.teapp.models.Teahouse
 import com.teapp.service.DatabaseFactory
 import io.ktor.application.*
+import io.ktor.features.*
 import io.ktor.response.*
+import io.ktor.request.*
 import io.ktor.routing.*
 import io.ktor.http.*
+import io.ktor.html.*
+import kotlinx.html.*
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
@@ -13,18 +16,9 @@ fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 @kotlin.jvm.JvmOverloads
 fun Application.module(testing: Boolean = false) {
     val dataFactory = DatabaseFactory
-    install(Routing) {
-        route("/api") {
-            get("/teahouses/{id}") {
-                try{
-                    val id = call.parameters["id"]!!.toInt()
-                    val teahouse = Teahouse(id)
-                    if(teahouse.fetchDataFromDB(dataFactory)) {
-                        call.respondText(teahouse.toJson(), contentType = ContentType.Application.Json)
-                    }
-                }
-                catch(invalidIdException: NumberFormatException) {}
-            }
+    routing {
+        get("/{id}") {
+            call.respondText("${dataFactory.getTeahousById(call.parameters["id"]!!.toInt())}", contentType = ContentType.Text.Plain)
         }
     }
 }
