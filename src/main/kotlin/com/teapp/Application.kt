@@ -5,7 +5,8 @@ import com.teapp.service.DatabaseFactory
 import io.ktor.application.*
 import io.ktor.response.*
 import io.ktor.routing.*
-import io.ktor.http.*
+import io.ktor.features.ContentNegotiation
+import io.ktor.gson.*
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
@@ -20,11 +21,18 @@ fun Application.module(testing: Boolean = false) {
                     val id = call.parameters["id"]!!.toInt()
                     val teahouse = Teahouse(id)
                     if(teahouse.fetchDataFromDB(dataFactory)) {
-                        call.respondText(teahouse.toJson(), contentType = ContentType.Application.Json)
+                        call.respond(teahouse)
                     }
                 }
                 catch(invalidIdException: NumberFormatException) {}
             }
+        }
+    }
+    install(ContentNegotiation) {
+        gson{
+            setPrettyPrinting()
+            disableHtmlEscaping()
+            serializeNulls()
         }
     }
 }
