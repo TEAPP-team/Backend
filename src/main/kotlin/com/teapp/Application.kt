@@ -26,6 +26,9 @@ fun Application.module(testing: Boolean = false) {
                 }
                 catch(invalidIdException: NumberFormatException) {}
             }
+            get("/teahouses/all") {
+                call.respond(dataFactory.getAllTeahouses(dataFactory))
+            }
         }
     }
     install(ContentNegotiation) {

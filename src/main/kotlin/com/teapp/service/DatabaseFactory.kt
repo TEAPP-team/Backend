@@ -107,4 +107,17 @@ object DatabaseFactory {
         }
         return isTeahouseExist
     }
+
+    fun getAllTeahouses(db: DatabaseFactory) : MutableList<Teahouse> {
+        val allhouses : MutableList<Teahouse> = mutableListOf()
+        transaction {
+            addLogger(StdOutSqlLogger)
+            for (th in Teahouses.selectAll()){
+                val th_i = Teahouse(th[Teahouses.id])
+                th_i.fetchDataFromDB(db)
+                allhouses.add(th_i)
+            }
+        }
+        return allhouses
+    }
 }
