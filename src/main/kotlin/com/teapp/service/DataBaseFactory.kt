@@ -1,12 +1,14 @@
-package com.teapp.service
+package main.kotlin.com.teapp.service
 
 import com.teapp.Config
-import com.teapp.models.Teahouse
+import com.teapp.models.TeaHouse
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.statements.api.ExposedBlob
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
+import java.time.LocalDate
 
-object Teahouses : Table() {
+object TeaHouses : Table() {
     val id: Column<Int> = integer("id").autoIncrement()
     val title: Column<String> = varchar("title", 45)
     val address: Column<String> = varchar("address", 200)
@@ -15,7 +17,33 @@ object Teahouses : Table() {
     val phone: Column<String?> = varchar("phone", 15).nullable()
     val site: Column<String?> = varchar("site", 150).nullable()
 
-    override val primaryKey = PrimaryKey(id, name = "PK_Teahouse_ID")
+    override val primaryKey = PrimaryKey(id, name = "PK_TeaHouse_ID")
+}
+
+object Users : Table() {
+    val id: Column<Int> = integer("id").autoIncrement()
+    val firstName: Column<String> = varchar("firstname", 50)
+    val lastName: Column<String> = varchar("lastname", 50)
+    val avatar: Column<ExposedBlob> = blob("avatar")
+
+    override val primaryKey = PrimaryKey(TeaHouses.id, name = "PK_Person_ID")
+}
+
+object UserCredentials : Table() {
+    val id: Column<Int> = integer("id").autoIncrement()
+    val login: Column<String> = varchar("login", 30)
+    val password: Column<String> = varchar("password", 64)
+
+    override val primaryKey = PrimaryKey(TeaHouses.id, name = "PK_Credential_ID")
+}
+
+object UserConnections : Table() {
+    val id: Column<Int> = integer("id").autoIncrement()
+    val accessToken: Column<String> = varchar("access_token", 36)
+    //TODO Fill up parameter "expiredDate"
+    val expiredDate: Column<LocalDate>? = null/*varchar("exp_date", 30)*/
+    val userId: Column<Int> = integer("person_id")
+    val isLoggedOut: Column<Boolean> = bool("is_logged_out")
 }
 
 object Links : Table() {
@@ -23,16 +51,16 @@ object Links : Table() {
     val social_network_id: Column<Int> = (integer("social_network_id") references Social_Networks.id)
     val link: Column<String> = varchar("link", 300)
     val icon_url: Column<String?> = varchar("icon_url", 500).nullable()
-    val teahouse_id: Column<Int> = (integer("teahouse_id") references Teahouses.id)
+    val teahouse_id: Column<Int> = (integer("teahouse_id") references TeaHouses.id)
 
-    override val primaryKey = PrimaryKey(Links.id, name = "PK_Link_ID")
+    override val primaryKey = PrimaryKey(id, name = "PK_Link_ID")
 }
 
 object Social_Networks : Table() {
     val id: Column<Int> = integer("id").autoIncrement()
     val social_network: Column<String> = varchar("social_network", 30)
 
-    override val primaryKey = PrimaryKey(Social_Networks.id, name = "PK_SocialNetwork_ID")
+    override val primaryKey = PrimaryKey(id, name = "PK_SocialNetwork_ID")
 }
 
 object DatabaseFactory {
@@ -40,8 +68,8 @@ object DatabaseFactory {
         Database.connect(Config.dataSource)
     }
 
-    private fun getWorktime(id: Int): Teahouse.WorkTime {
-        val workTime = Teahouse.WorkTime()
+    private fun getWorktime(id: Int): TeaHouse.WorkTime {
+        val workTime = TeaHouse.WorkTime()
         TransactionManager.current().exec(
             "SELECT COUNT(*) AS rowcount,\n" +
                 "    DATE_FORMAT(Worktime.weekdays_opening, '%H.%i') as weekdays_opening,\n" +
@@ -68,14 +96,18 @@ object DatabaseFactory {
         return socialNetworks
     }
 
-    private fun getLinks(id: Int): MutableList<Teahouse.Link>? {
-        var links: MutableList<Teahouse.Link>? = null
+    //TODO Realize functions "getLogins"
+
+    private fun getLogins(id: Int) {}
+
+    private fun getLinks(id: Int): MutableList<TeaHouse.Link>? {
+        var links: MutableList<TeaHouse.Link>? = null
         val socialNetworksTypes = getSocialNetworkTypes()
         val linksList = Links.select { Links.teahouse_id eq id }.toList()
         if (linksList.isNotEmpty()) {
             links = mutableListOf()
             for (linkRow in linksList) {
-                val link = Teahouse.Link()
+                val link = TeaHouse.Link()
                 link.title = socialNetworksTypes[linkRow[Links.social_network_id]]!!
                 link.link = linkRow[Links.link]
                 link.icon_url = linkRow[Links.icon_url]
@@ -85,26 +117,26 @@ object DatabaseFactory {
         return links
     }
 
-    fun getTeahouseById(teahouse: Teahouse): Boolean {
-        var isTeahouseExist = false
-        val id = teahouse.id
+    fun getTeahouseById(teaHouse: TeaHouse): Boolean {
+        var isTeaHouseExist = false
+        val id = teaHouse.id
         transaction {
             addLogger(StdOutSqlLogger)
-            val teahouseData = Teahouses.select { Teahouses.id eq id }.toList()
-            if (teahouseData.size == 1) {
-                isTeahouseExist = true
-                teahouseData.forEach{ values->
-                    teahouse.title = values[Teahouses.title]
-                    teahouse.address = values[Teahouses.address]
-                    teahouse.coordinates.latitude = values[Teahouses.latitude]
-                    teahouse.coordinates.longitude = values[Teahouses.longitude]
-                    teahouse.phone = values[Teahouses.phone]
-                    teahouse.site = values[Teahouses.site]
-                    teahouse.workTime = getWorktime(id)
-                    teahouse.links = getLinks(id)
+            val teaHouseData = TeaHouses.select { TeaHouses.id eq id }.toList()
+            if (teaHouseData.size == 1) {
+                isTeaHouseExist = true
+                teaHouseData.forEach{ values->
+                    teaHouse.title = values[TeaHouses.title]
+                    teaHouse.address = values[TeaHouses.address]
+                    teaHouse.coordinates.latitude = values[TeaHouses.latitude]
+                    teaHouse.coordinates.longitude = values[TeaHouses.longitude]
+                    teaHouse.phone = values[TeaHouses.phone]
+                    teaHouse.site = values[TeaHouses.site]
+                    teaHouse.workTime = getWorktime(id)
+                    teaHouse.links = getLinks(id)
                 }
             }
         }
-        return isTeahouseExist
+        return isTeaHouseExist
     }
 }

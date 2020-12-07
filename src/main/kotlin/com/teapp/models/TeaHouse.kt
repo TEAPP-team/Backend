@@ -1,9 +1,9 @@
 package com.teapp.models
 
 import com.google.gson.GsonBuilder
-import com.teapp.service.DatabaseFactory
+import main.kotlin.com.teapp.service.DatabaseFactory
 
-data class Teahouse(val id: Int) {
+data class TeaHouse(val id: Int) {
     lateinit var title: String
     lateinit var address: String
     var coordinates = Coordinates()
