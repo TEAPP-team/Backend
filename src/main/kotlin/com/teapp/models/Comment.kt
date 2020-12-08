@@ -2,7 +2,7 @@ package main.kotlin.com.teapp.models
 
 import com.teapp.service.DatabaseFactory
 
-class Comment(val id: Int) {
+class Comment(var id: Int) {
     lateinit var message: String
     var post_id: Int? = null
     var person_id: Int? = null

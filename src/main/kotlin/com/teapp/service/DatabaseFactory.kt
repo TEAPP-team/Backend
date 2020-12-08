@@ -155,24 +155,48 @@ object DatabaseFactory {
     }
 
     fun getCommentById(comment: Comment): Boolean {
-        var isPostExist = false
+        var isCommentExist = false
         transaction {
             addLogger(StdOutSqlLogger)
-            val postsList = Comments.select { Comments.id eq comment.id }.toList()
-            if (postsList.size == 1) {
-                comment.message = postsList[0][Comments.message]
-                comment.post_id = postsList[0][Comments.post_id]
-                comment.person_id = postsList[0][Comments.person_id]
+            val commentssList = Comments.select { Comments.id eq comment.id }.toList()
+            if (commentssList.size == 1) {
+                comment.message = commentssList[0][Comments.message]
+                comment.post_id = commentssList[0][Comments.post_id]
+                comment.person_id = commentssList[0][Comments.person_id]
                 TransactionManager.current().exec(
                     "SELECT date FROM Comments WHERE id = ${comment.id};"
                 ) { rs ->
                     rs.next()
                     comment.date = rs.getString("date")
                 }
-                isPostExist = true
+                isCommentExist = true
             }
         }
-        return isPostExist
+        return isCommentExist
+    }
+
+    fun getCommentByPost(post: Post, comments: MutableList<Comment>): Boolean {
+        var isCommentExist = false
+        transaction {
+            addLogger(StdOutSqlLogger)
+            val commentList = Comments.select { Comments.post_id eq post.id }.toList()
+            commentList.forEach { comment_data ->
+                var comment = Comment(0)
+                comment.id = comment_data[Comments.id]
+                comment.message = comment_data[Comments.message]
+                comment.post_id = comment_data[Comments.post_id]
+                comment.person_id = comment_data[Comments.person_id]
+                TransactionManager.current().exec(
+                    "SELECT date FROM Comments WHERE id = ${comment.id};"
+                ) { rs ->
+                    rs.next()
+                    comment.date = rs.getString("date")
+                }
+                isCommentExist = true
+                comments.add(comment)
+            }
+        }
+        return isCommentExist
     }
 
     fun addPost(post: Post) {
@@ -181,7 +205,7 @@ object DatabaseFactory {
             Posts.insert {
                 it[header] = post.header
                 it[description] = post.description
-                if (post.image!=null) {
+                if (post.image != null) {
                     it[image] = ExposedBlob(Base64.getDecoder().decode(post.image))
                 }
             }
@@ -193,10 +217,10 @@ object DatabaseFactory {
             addLogger(StdOutSqlLogger)
             Comments.insert {
                 it[message] = comment.message
-                if (comment.person_id!=null) {
+                if (comment.person_id != null) {
                     it[person_id] = comment.person_id
                 }
-                if (comment.post_id!=null) {
+                if (comment.post_id != null) {
                     it[post_id] = comment.post_id
                 }
             }

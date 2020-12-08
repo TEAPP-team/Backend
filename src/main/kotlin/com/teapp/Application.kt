@@ -50,6 +50,17 @@ fun Application.module(testing: Boolean = false) {
                 } catch (invalidIdException: NumberFormatException) {
                 }
             }
+
+            get("/comments_by_post/{id}") {
+                try {
+                    val id = call.parameters["id"]!!.toInt()
+                    var comments = mutableListOf<Comment>()
+                    if (dataFactory.getCommentByPost(Post(id), comments)) {
+                        call.respond(comments)
+                    }
+                } catch (invalidIdException: NumberFormatException) {
+                }
+            }
         }
     }
     install(ContentNegotiation) {
