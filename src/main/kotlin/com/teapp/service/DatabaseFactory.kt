@@ -7,6 +7,7 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.api.ExposedBlob
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
+import java.util.*
 
 object Teahouses : Table() {
     val id: Column<Int> = integer("id").autoIncrement()
@@ -121,11 +122,11 @@ object DatabaseFactory {
     }
 
     fun getPostById(post: Post): Boolean {
-        val linksList = Posts.select { Posts.id eq post.id }.toList()
-        if (linksList.size == 1) {
-            post.header = linksList[0][Posts.header]
-            post.description = linksList[0][Posts.description]
-            post.image = linksList[0][Posts.image].bytes
+        val postsList = Posts.select { Posts.id eq post.id }.toList()
+        if (postsList.size == 1) {
+            post.header = postsList[0][Posts.header]
+            post.description = postsList[0][Posts.description]
+            post.image = Base64.getEncoder().encodeToString(postsList[0][Posts.image].bytes)
             return true
         }
         return false
