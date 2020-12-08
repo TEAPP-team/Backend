@@ -2,6 +2,7 @@ package com.teapp.service
 
 import com.teapp.Config
 import com.teapp.models.Teahouse
+import main.kotlin.com.teapp.models.Comment
 import main.kotlin.com.teapp.models.Post
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.api.ExposedBlob
@@ -43,6 +44,15 @@ object Posts : Table() {
     val header: Column<String> = varchar("header", 255)
     val description: Column<String> = text("description")
     val image: Column<ExposedBlob?> = blob("image").nullable()
+
+    override val primaryKey = PrimaryKey(id, name = "PK_Posts_ID")
+}
+
+object Comments : Table() {
+    val id: Column<Int> = integer("id").autoIncrement()
+    val message: Column<String> = text("message")
+    val post_id: Column<Int?> = integer("post_id").nullable()
+    val person_id: Column<Int?> = integer("person_id").nullable()
 
     override val primaryKey = PrimaryKey(id, name = "PK_Posts_ID")
 }
@@ -137,6 +147,27 @@ object DatabaseFactory {
                 ) { rs ->
                     rs.next()
                     post.date = rs.getString("date")
+                }
+                isPostExist = true
+            }
+        }
+        return isPostExist
+    }
+
+    fun getCommentById(comment: Comment): Boolean {
+        var isPostExist = false
+        transaction {
+            addLogger(StdOutSqlLogger)
+            val postsList = Comments.select { Comments.id eq comment.id }.toList()
+            if (postsList.size == 1) {
+                comment.message = postsList[0][Comments.message]
+                comment.post_id = postsList[0][Comments.post_id]
+                comment.person_id = postsList[0][Comments.person_id]
+                TransactionManager.current().exec(
+                    "SELECT date FROM Comments WHERE id = ${comment.id};"
+                ) { rs ->
+                    rs.next()
+                    comment.date = rs.getString("date")
                 }
                 isPostExist = true
             }

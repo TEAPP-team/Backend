@@ -3,10 +3,11 @@ package com.teapp
 import com.teapp.models.Teahouse
 import com.teapp.service.DatabaseFactory
 import io.ktor.application.*
+import io.ktor.features.*
+import io.ktor.gson.*
 import io.ktor.response.*
 import io.ktor.routing.*
-import io.ktor.features.ContentNegotiation
-import io.ktor.gson.*
+import main.kotlin.com.teapp.models.Comment
 import main.kotlin.com.teapp.models.Post
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
@@ -18,30 +19,41 @@ fun Application.module(testing: Boolean = false) {
     install(Routing) {
         route("/api") {
             get("/teahouses/{id}") {
-                try{
+                try {
                     val id = call.parameters["id"]!!.toInt()
                     val teahouse = Teahouse(id)
-                    if(teahouse.fetchDataFromDB(dataFactory)) {
+                    if (teahouse.fetchDataFromDB(dataFactory)) {
                         call.respond(teahouse)
                     }
+                } catch (invalidIdException: NumberFormatException) {
                 }
-                catch(invalidIdException: NumberFormatException) {}
             }
 
             get("/posts/{id}") {
-                try{
+                try {
                     val id = call.parameters["id"]!!.toInt()
                     val post = Post(id)
-                    if(post.fetchDataFromDB(dataFactory)) {
+                    if (post.fetchDataFromDB(dataFactory)) {
                         call.respond(post)
                     }
+                } catch (invalidIdException: NumberFormatException) {
                 }
-                catch(invalidIdException: NumberFormatException) {}
+            }
+
+            get("/comments/{id}") {
+                try {
+                    val id = call.parameters["id"]!!.toInt()
+                    val comment = Comment(id)
+                    if (comment.fetchDataFromDB(dataFactory)) {
+                        call.respond(comment)
+                    }
+                } catch (invalidIdException: NumberFormatException) {
+                }
             }
         }
     }
     install(ContentNegotiation) {
-        gson{
+        gson {
             setPrettyPrinting()
             disableHtmlEscaping()
             serializeNulls()
