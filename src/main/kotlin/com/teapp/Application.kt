@@ -1,16 +1,17 @@
 package com.teapp
 
-import com.teapp.models.AppStrings
-import com.teapp.models.Teahouse
+import com.teapp.models.*
 import com.teapp.models.UserConnections
-import com.teapp.models.UserCredentials
-import com.teapp.service.DatabaseFactory
+import com.teapp.service.*
 import io.ktor.application.*
 import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.features.ContentNegotiation
 import io.ktor.gson.*
+import io.ktor.request.*
 import io.ktor.sessions.*
+import main.kotlin.com.teapp.service.LoginFeature
+import java.lang.IllegalStateException
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
@@ -26,9 +27,6 @@ fun Application.module(testing: Boolean = false) {
         route("/api") {
             get("/teahouses/{id}") {
                 try{
-                    val userConnections = UserConnections(1)
-                    userConnections.userId = 999
-                    call.sessions.set<UserConnections>(userConnections)
                     val id = call.parameters["id"]!!.toInt()
                     val teahouse = Teahouse(id)
                     if(teahouse.fetchDataFromDB(dataFactory)) {
@@ -38,6 +36,32 @@ fun Application.module(testing: Boolean = false) {
                 catch(invalidIdException: NumberFormatException) {}
             }
         }
+        route("") {
+            get("") {
+                call.respond("Hello World!")
+            }
+            post("/login") {
+                val multhiPart = call.receiveMultipart()
+//                val credentials = LoginFeature().isCredentialsValid(multiPart, dataFactory)
+//                val user = User(credentials.id)
+                call.respond(multhiPart)
+//                call.sessions.set(user)
+            }
+//            get("/") {
+//                val session = call.sessions.get<UserConnections>()
+//                if(session == null) {
+//                    call.respond("You're not logged in")
+//                    throw IllegalStateException()
+//                }
+//            }
+            get("/logout") {
+                call.sessions.clear<UserConnections>()
+            }
+        }
+
+//        val userConnections = UserConnections(1)
+//        userConnections.userId = 999
+//        call.sessions.set<UserConnections>(userConnections)
     }
     install(ContentNegotiation) {
         gson{
