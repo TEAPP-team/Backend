@@ -40,6 +40,16 @@ fun Application.module(testing: Boolean = false) {
                 }
             }
 
+            get("/posts_all/") {
+                try {
+                    val posts = mutableListOf<Post>()
+                    if (dataFactory.getAllPosts(posts)) {
+                        call.respond(posts)
+                    }
+                } catch (invalidIdException: NumberFormatException) {
+                }
+            }
+
             get("/comments/{id}") {
                 try {
                     val id = call.parameters["id"]!!.toInt()
@@ -54,7 +64,7 @@ fun Application.module(testing: Boolean = false) {
             get("/comments_by_post/{id}") {
                 try {
                     val id = call.parameters["id"]!!.toInt()
-                    var comments = mutableListOf<Comment>()
+                    val comments = mutableListOf<Comment>()
                     if (dataFactory.getCommentByPost(Post(id), comments)) {
                         call.respond(comments)
                     }

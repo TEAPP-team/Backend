@@ -175,13 +175,38 @@ object DatabaseFactory {
         return isCommentExist
     }
 
+    fun getAllPosts(posts: MutableList<Post>): Boolean{
+        var isPostsExist = false
+        transaction {
+            addLogger(StdOutSqlLogger)
+            val postsList = Posts.selectAll().toList()
+            postsList.forEach() { post_data ->
+                val post = Post(post_data[Posts.id])
+                post.header = post_data[Posts.header]
+                post.description = post_data[Posts.description]
+                if (postsList[0][Posts.image] != null) {
+                    post.image = Base64.getEncoder().encodeToString(post_data[Posts.image]!!.bytes)
+                }
+                TransactionManager.current().exec(
+                    "SELECT date FROM Posts WHERE id = ${post.id};"
+                ) { rs ->
+                    rs.next()
+                    post.date = rs.getString("date")
+                }
+                posts.add(post)
+                isPostsExist = true
+            }
+        }
+        return isPostsExist
+    }
+
     fun getCommentByPost(post: Post, comments: MutableList<Comment>): Boolean {
         var isCommentExist = false
         transaction {
             addLogger(StdOutSqlLogger)
             val commentList = Comments.select { Comments.post_id eq post.id }.toList()
             commentList.forEach { comment_data ->
-                var comment = Comment(0)
+                val comment = Comment(0)
                 comment.id = comment_data[Comments.id]
                 comment.message = comment_data[Comments.message]
                 comment.post_id = comment_data[Comments.post_id]
