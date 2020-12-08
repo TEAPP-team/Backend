@@ -27,6 +27,17 @@ fun Application.module(testing: Boolean = false) {
                 }
                 catch(invalidIdException: NumberFormatException) {}
             }
+
+            get("/posts/{id}") {
+                try{
+                    val id = call.parameters["id"]!!.toInt()
+                    val post = Post(id)
+                    if(post.fetchDataFromDB(dataFactory)) {
+                        call.respond(post)
+                    }
+                }
+                catch(invalidIdException: NumberFormatException) {}
+            }
         }
     }
     install(ContentNegotiation) {
