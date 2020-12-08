@@ -2,7 +2,9 @@ package com.teapp.service
 
 import com.teapp.Config
 import com.teapp.models.Teahouse
+import main.kotlin.com.teapp.models.Post
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.statements.api.ExposedBlob
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
 
@@ -25,14 +27,23 @@ object Links : Table() {
     val icon_url: Column<String?> = varchar("icon_url", 500).nullable()
     val teahouse_id: Column<Int> = (integer("teahouse_id") references Teahouses.id)
 
-    override val primaryKey = PrimaryKey(Links.id, name = "PK_Link_ID")
+    override val primaryKey = PrimaryKey(id, name = "PK_Link_ID")
 }
 
 object Social_Networks : Table() {
     val id: Column<Int> = integer("id").autoIncrement()
     val social_network: Column<String> = varchar("social_network", 30)
 
-    override val primaryKey = PrimaryKey(Social_Networks.id, name = "PK_SocialNetwork_ID")
+    override val primaryKey = PrimaryKey(id, name = "PK_SocialNetwork_ID")
+}
+
+object Posts : Table() {
+    val id: Column<Int> = integer("id").autoIncrement()
+    val header: Column<String> = varchar("header", 255)
+    val description: Column<String> = text("description")
+    val image: Column<ExposedBlob> = blob("image")
+
+    override val primaryKey = PrimaryKey(id, name = "PK_Posts_ID")
 }
 
 object DatabaseFactory {
@@ -44,12 +55,13 @@ object DatabaseFactory {
         val workTime = Teahouse.WorkTime()
         TransactionManager.current().exec(
             "SELECT COUNT(*) AS rowcount,\n" +
-                "    DATE_FORMAT(Worktime.weekdays_opening, '%H.%i') as weekdays_opening,\n" +
-                "    DATE_FORMAT(Worktime.weekdays_closing, '%H.%i') as weekdays_closing,\n" +
-                "    DATE_FORMAT(Worktime.weekend_opening, '%H.%i') as weekend_opening,\n" +
-                "    DATE_FORMAT(Worktime.weekend_closing, '%H.%i') as weekend_closing\n" +
-                "FROM Worktime INNER JOIN Teahouses on Teahouses.Worktime_id = Worktime.id\n" +
-                "WHERE Teahouses.id = $id;") { rs ->
+                    "    DATE_FORMAT(Worktime.weekdays_opening, '%H.%i') as weekdays_opening,\n" +
+                    "    DATE_FORMAT(Worktime.weekdays_closing, '%H.%i') as weekdays_closing,\n" +
+                    "    DATE_FORMAT(Worktime.weekend_opening, '%H.%i') as weekend_opening,\n" +
+                    "    DATE_FORMAT(Worktime.weekend_closing, '%H.%i') as weekend_closing\n" +
+                    "FROM Worktime INNER JOIN Teahouses on Teahouses.Worktime_id = Worktime.id\n" +
+                    "WHERE Teahouses.id = $id;"
+        ) { rs ->
             if (rs.next() && rs.getInt("rowcount") == 1) {
                 workTime.weekdays.from = rs.getString("weekdays_opening")
                 workTime.weekdays.to = rs.getString("weekdays_closing")
@@ -93,7 +105,7 @@ object DatabaseFactory {
             val teahouseData = Teahouses.select { Teahouses.id eq id }.toList()
             if (teahouseData.size == 1) {
                 isTeahouseExist = true
-                teahouseData.forEach{ values->
+                teahouseData.forEach { values ->
                     teahouse.title = values[Teahouses.title]
                     teahouse.address = values[Teahouses.address]
                     teahouse.coordinates.latitude = values[Teahouses.latitude]
@@ -106,5 +118,16 @@ object DatabaseFactory {
             }
         }
         return isTeahouseExist
+    }
+
+    fun getPostById(post: Post): Boolean {
+        val linksList = Posts.select { Posts.id eq post.id }.toList()
+        if (linksList.size == 1) {
+            post.header = linksList[0][Posts.header]
+            post.description = linksList[0][Posts.description]
+            post.image = linksList[0][Posts.image].bytes
+            return true
+        }
+        return false
     }
 }
