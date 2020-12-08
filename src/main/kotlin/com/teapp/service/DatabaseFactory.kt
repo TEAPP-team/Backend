@@ -42,7 +42,7 @@ object Posts : Table() {
     val id: Column<Int> = integer("id").autoIncrement()
     val header: Column<String> = varchar("header", 255)
     val description: Column<String> = text("description")
-    val image: Column<ExposedBlob> = blob("image")
+    val image: Column<ExposedBlob?> = blob("image").nullable()
 
     override val primaryKey = PrimaryKey(id, name = "PK_Posts_ID")
 }
@@ -122,13 +122,25 @@ object DatabaseFactory {
     }
 
     fun getPostById(post: Post): Boolean {
-        val postsList = Posts.select { Posts.id eq post.id }.toList()
-        if (postsList.size == 1) {
-            post.header = postsList[0][Posts.header]
-            post.description = postsList[0][Posts.description]
-            post.image = Base64.getEncoder().encodeToString(postsList[0][Posts.image].bytes)
-            return true
+        var isPostExist = false
+        transaction {
+            addLogger(StdOutSqlLogger)
+            val postsList = Posts.select { Posts.id eq post.id }.toList()
+            if (postsList.size == 1) {
+                post.header = postsList[0][Posts.header]
+                post.description = postsList[0][Posts.description]
+                if (postsList[0][Posts.image] != null) {
+                    post.image = Base64.getEncoder().encodeToString(postsList[0][Posts.image]!!.bytes)
+                }
+                TransactionManager.current().exec(
+                    "SELECT date FROM Posts WHERE id = ${post.id};"
+                ) { rs ->
+                    rs.next()
+                    post.date = rs.getString("date")
+                }
+                isPostExist = true
+            }
         }
-        return false
+        return isPostExist
     }
 }

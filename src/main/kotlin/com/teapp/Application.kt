@@ -7,6 +7,7 @@ import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.features.ContentNegotiation
 import io.ktor.gson.*
+import main.kotlin.com.teapp.models.Post
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
