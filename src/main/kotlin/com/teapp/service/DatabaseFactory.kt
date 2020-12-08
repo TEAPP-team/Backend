@@ -1,7 +1,8 @@
-package main.kotlin.com.teapp.service
+package com.teapp.service
 
 import com.teapp.Config
-import com.teapp.models.TeaHouse
+import com.teapp.models.Teahouse
+import com.teapp.models.User
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.api.ExposedBlob
 import org.jetbrains.exposed.sql.transactions.TransactionManager
@@ -68,8 +69,8 @@ object DatabaseFactory {
         Database.connect(Config.dataSource)
     }
 
-    private fun getWorktime(id: Int): TeaHouse.WorkTime {
-        val workTime = TeaHouse.WorkTime()
+    private fun getWorktime(id: Int): Teahouse.WorkTime {
+        val workTime = Teahouse.WorkTime()
         TransactionManager.current().exec(
             "SELECT COUNT(*) AS rowcount,\n" +
                 "    DATE_FORMAT(Worktime.weekdays_opening, '%H.%i') as weekdays_opening,\n" +
@@ -98,16 +99,22 @@ object DatabaseFactory {
 
     //TODO Realize functions "getLogins"
 
-    private fun getLogins(id: Int) {}
+    fun getAllLogins(): List<String>? {
+        return null
+    }
 
-    private fun getLinks(id: Int): MutableList<TeaHouse.Link>? {
-        var links: MutableList<TeaHouse.Link>? = null
+    fun getUserById(id: Int): User? {
+        return null
+    }
+
+    private fun getLinks(id: Int): MutableList<Teahouse.Link>? {
+        var links: MutableList<Teahouse.Link>? = null
         val socialNetworksTypes = getSocialNetworkTypes()
         val linksList = Links.select { Links.teahouse_id eq id }.toList()
         if (linksList.isNotEmpty()) {
             links = mutableListOf()
             for (linkRow in linksList) {
-                val link = TeaHouse.Link()
+                val link = Teahouse.Link()
                 link.title = socialNetworksTypes[linkRow[Links.social_network_id]]!!
                 link.link = linkRow[Links.link]
                 link.icon_url = linkRow[Links.icon_url]
@@ -117,23 +124,23 @@ object DatabaseFactory {
         return links
     }
 
-    fun getTeahouseById(teaHouse: TeaHouse): Boolean {
+    fun getTeahouseById(teahouse: Teahouse): Boolean {
         var isTeaHouseExist = false
-        val id = teaHouse.id
+        val id = teahouse.id
         transaction {
             addLogger(StdOutSqlLogger)
             val teaHouseData = TeaHouses.select { TeaHouses.id eq id }.toList()
             if (teaHouseData.size == 1) {
                 isTeaHouseExist = true
                 teaHouseData.forEach{ values->
-                    teaHouse.title = values[TeaHouses.title]
-                    teaHouse.address = values[TeaHouses.address]
-                    teaHouse.coordinates.latitude = values[TeaHouses.latitude]
-                    teaHouse.coordinates.longitude = values[TeaHouses.longitude]
-                    teaHouse.phone = values[TeaHouses.phone]
-                    teaHouse.site = values[TeaHouses.site]
-                    teaHouse.workTime = getWorktime(id)
-                    teaHouse.links = getLinks(id)
+                    teahouse.title = values[TeaHouses.title]
+                    teahouse.address = values[TeaHouses.address]
+                    teahouse.coordinates.latitude = values[TeaHouses.latitude]
+                    teahouse.coordinates.longitude = values[TeaHouses.longitude]
+                    teahouse.phone = values[TeaHouses.phone]
+                    teahouse.site = values[TeaHouses.site]
+                    teahouse.workTime = getWorktime(id)
+                    teahouse.links = getLinks(id)
                 }
             }
         }

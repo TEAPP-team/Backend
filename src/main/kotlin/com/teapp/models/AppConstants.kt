@@ -1,4 +1,4 @@
-package main.kotlin.com.teapp.models
+package com.teapp.models
 
 enum class AppStrings(val value:String) {
     COOKIE_NAME("TEAPP_COOKIE"),

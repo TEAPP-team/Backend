@@ -1,4 +1,4 @@
-package main.kotlin.com.teapp.models
+package com.teapp.models
 
 import java.sql.Blob
 

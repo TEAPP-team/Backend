@@ -1,50 +1,65 @@
 package main.kotlin.com.teapp.service
 
+import com.teapp.models.*
 import io.ktor.application.*
+import io.ktor.http.*
 import io.ktor.http.content.*
 import io.ktor.request.*
+import io.ktor.response.*
 import io.ktor.routing.*
-import main.kotlin.com.teapp.models.UserCredentials
-import org.slf4j.LoggerFactory
+import io.ktor.sessions.*
+import com.teapp.service.DatabaseFactory
 import java.lang.IllegalArgumentException
+import java.lang.IllegalStateException
 
-fun Route.doLogin(){
+fun Route.doLogin(dataFactory: DatabaseFactory){
     post("/login") {
-        val multipart = call.receiveMultipart()
-        var credentials = isCredentialsValid(multipart)
+        val multiPart = call.receiveMultipart()
+        val credentials = isCredentialsValid(multiPart, dataFactory)
+        val user = User(credentials.id)
+
+        call.sessions.set(user)
+    }
+    get("/") {
+        val session = call.sessions.get<UserConnections>()
+        if(session == null) {
+            call.respond("You're not logged in")
+            throw IllegalStateException()
+        }
+    }
+    get("/logout") {
+
+        call.sessions.clear<UserConnections>()
     }
 }
 
-suspend fun isCredentialsValid(multipart: MultiPartData): UserCredentials {
-    val log = LoggerFactory.getLogger("DoLogin")
+suspend fun getCredentials(multipart: MultiPartData): List<String> {
     var id: Int = 0
-    var login: String = ""
-    var password: String = ""
+    var login: String = AppStrings.EMPTY_STRING.value
+    var password: String = AppStrings.EMPTY_STRING.value
     while(true) {
         val part = multipart.readPart()?: break
         when(part) {
             is PartData.FormItem -> {
-                log.info("FormItem: ${part.name} = ${part.value}")
-                if (part.name == "id")
+                if (part.name == AppStrings.ID_NAME.value)
                     id = part.value.toInt()
-                if (part.name == "username")
+                if (part.name == AppStrings.LOGIN_NAME.value)
                     login = part.value
-                if (part.name == "password")
+                if (part.name == AppStrings.PASSWORD_NAME.value)
                     password = part.value
             }
-            is PartData.FileItem -> {
-                log.info("FileItem: ${part.name} -> ${part.originalFileName} of ${part.contentType}")
-            }
+            is PartData.FileItem -> {}
         }
         part.dispose()
     }
-    val credentials = UserCredentials(id)
-    if(credentials.isLoginValid(login) && credentials.isPasswordValid(password)){
-        credentials.login = login
-        credentials.password = password
-    }
-    else throw IllegalArgumentException()
-    return credentials
+    return listOf(id.toString(), login, password)
 }
 
-fun createToken() {}
+suspend fun isCredentialsValid(multipart: MultiPartData, dataFactory: DatabaseFactory): UserCredentials {
+    var list = getCredentials(multipart)
+    var credentials = UserCredentials(list[AppInts.ID_INDEX.value].toInt())
+    credentials.login = list[AppInts.LOGIN_INDEX.value]
+    credentials.password = list[AppInts.PASSWORD_INDEX.value]
+    if(!credentials.isLoginValid(credentials.login, dataFactory)!!) throw IllegalArgumentException()
+    return credentials
+}
