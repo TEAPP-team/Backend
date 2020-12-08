@@ -174,4 +174,32 @@ object DatabaseFactory {
         }
         return isPostExist
     }
+
+    fun addPost(post: Post) {
+        transaction {
+            addLogger(StdOutSqlLogger)
+            Posts.insert {
+                it[header] = post.header
+                it[description] = post.description
+                if (post.image!=null) {
+                    it[image] = ExposedBlob(Base64.getDecoder().decode(post.image))
+                }
+            }
+        }
+    }
+
+    fun addComment(comment: Comment) {
+        transaction {
+            addLogger(StdOutSqlLogger)
+            Comments.insert {
+                it[message] = comment.message
+                if (comment.person_id!=null) {
+                    it[person_id] = comment.person_id
+                }
+                if (comment.post_id!=null) {
+                    it[post_id] = comment.post_id
+                }
+            }
+        }
+    }
 }
