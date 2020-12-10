@@ -3,6 +3,7 @@ package com.teapp.service
 import com.teapp.Config
 import com.teapp.models.Teahouse
 import com.teapp.models.User
+import com.teapp.models.UserCredentials
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.api.ExposedBlob
 import org.jetbrains.exposed.sql.transactions.TransactionManager
@@ -97,16 +98,33 @@ object DatabaseFactory {
         return socialNetworks
     }
 
-    //TODO Realize functions "getLogins"
+    //TODO Realize functions below, because they are just templates for testing
 
-    fun getAllLogins(): List<String>? {
-        return null
+    fun getUserById(id: Int): User {
+        val user: User = User(1)
+        user.firstName = "John"
+        user.lastName = "Doe"
+        return user
     }
 
-    fun getUserById(id: Int): User? {
-        return null
+    fun getAllUsersCredentials(): ArrayList<UserCredentials> {
+        val credentials: UserCredentials = UserCredentials(0)
+        credentials.login = "qwe"
+        credentials.password = "asd"
+        val usersCredentials: ArrayList<UserCredentials> = arrayListOf(credentials)
+        for (i in 1..5) {
+            val credentials: UserCredentials = UserCredentials(i)
+            credentials.login = "qwe$i"
+            credentials.password = "asd$i"
+            usersCredentials.add(credentials)
+        }
+        return usersCredentials
     }
 
+    fun getAmountOfSessions(): Int {
+        return 6
+    }
+    //TODO Before right here
     private fun getLinks(id: Int): MutableList<Teahouse.Link>? {
         var links: MutableList<Teahouse.Link>? = null
         val socialNetworksTypes = getSocialNetworkTypes()
