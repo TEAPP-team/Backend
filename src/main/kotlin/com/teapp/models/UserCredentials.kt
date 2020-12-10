@@ -4,7 +4,7 @@ class UserCredentials(val id: Int) {
     lateinit var login: String
     lateinit var password: String
 
-    fun checkUserCredentials(usersCredentials: List<UserCredentials>): UserCredentials? {
+    fun checkUserCredentials(usersCredentials: ArrayList<UserCredentials>): UserCredentials? {
         var loginIsValid = false
         lateinit var userCredentials: UserCredentials
         for (credentials in usersCredentials)
