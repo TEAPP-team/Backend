@@ -1,8 +1,8 @@
 package com.teapp.models
 
 class UserCredentials(val id: Int) {
-    lateinit var login: String
-    lateinit var password: String
+    var login: String = ""
+    var password: String = ""
 
     fun checkUserCredentials(usersCredentials: ArrayList<UserCredentials>): UserCredentials? {
         var loginIsValid = false
