@@ -98,7 +98,7 @@ object DatabaseFactory {
         return socialNetworks
     }
 
-    //TODO Realize functions below, because they are just templates for testing
+    //TODO Realize functions below, because they are just templates for testing---------------
 
     fun getUserById(id: Int): User {
         val user: User = User(1)
@@ -121,10 +121,10 @@ object DatabaseFactory {
         return usersCredentials
     }
 
-    fun getAmountOfSessions(): Int {
-        return 6
-    }
-    //TODO Before right here
+    fun getAmountOfSessions() = 6
+
+    //TODO Before here-----------------------------------------------------
+
     private fun getLinks(id: Int): MutableList<Teahouse.Link>? {
         var links: MutableList<Teahouse.Link>? = null
         val socialNetworksTypes = getSocialNetworkTypes()

@@ -25,4 +25,9 @@ data class UserConnections(val id: Int) {
         val gson = GsonBuilder().serializeNulls().disableHtmlEscaping().setPrettyPrinting().create()
         return gson.toJson(this)
     }
+
+//    fun checkCookieIsValid(cookie: String?): Boolean {
+//        if(cookie == null) return false
+//
+//    }
 }
