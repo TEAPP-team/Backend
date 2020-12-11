@@ -18,16 +18,11 @@ data class UserConnections(val id: Int) {
         personId = user.id
         this.session.accessToken = UUID.randomUUID().toString()
         this.session.expiredDate = LocalDate.now().plusDays(1.toLong()).toString()
-        this.session.isLoggedOut = false
+        this.session.isLoggedOut = true
     }
 
     fun toJson(): String {
         val gson = GsonBuilder().serializeNulls().disableHtmlEscaping().setPrettyPrinting().create()
         return gson.toJson(this)
     }
-
-//    fun checkCookieIsValid(cookie: String?): Boolean {
-//        if(cookie == null) return false
-//
-//    }
 }

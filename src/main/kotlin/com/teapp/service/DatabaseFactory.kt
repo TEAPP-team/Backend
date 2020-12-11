@@ -3,6 +3,7 @@ package com.teapp.service
 import com.teapp.Config
 import com.teapp.models.Teahouse
 import com.teapp.models.User
+import com.teapp.models.UserConnections
 import com.teapp.models.UserCredentials
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.api.ExposedBlob
@@ -105,6 +106,10 @@ object DatabaseFactory {
         user.firstName = "John"
         user.lastName = "Doe"
         return user
+    }
+
+    fun getAllSessions(): ArrayList<UserConnections>? {
+        return null
     }
 
     fun getAllUsersCredentials(): ArrayList<UserCredentials> {
