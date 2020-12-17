@@ -13,10 +13,6 @@ Server-side code for a mobile app TEAPP that helps users find tea shops in Saint
 
 On Cloud, the root endpoint for the public API is `https://teappp.herokuapp.com/`.
 
-## API Rate Limit
-
-We allow a maximum of 5 requests to our API. We are working on a solution to this problem.
-
 ## Errors
 
 The TEAPP API can return the following errors:
@@ -25,9 +21,10 @@ The TEAPP API can return the following errors:
 | ----------- | --------------------------------------------------------------------- |
 | `403`       | Reached request limit to the API.                                     |
 | `404`       | Not found.                                                            |
-| `418`       | I'm a teapot.                                                         |
+
 
 ##Database
+
 ![alt text](dbd.png "Database Diagram")
 
 ## Requests
@@ -44,11 +41,11 @@ Get the data for a tea shop by its `id`.
 
 ```json
 {
-  "title": "Мойчай.ру",
-  "address": "Лиговский проспект д. 74 оф. 202",
+  "title": "Чайная",
+  "address": "г. Санкт-Петербург",
   "coordinates": {
-    "latitude": 59.921907,
-    "longitude": 30.355705
+    "latitude": 59.0,
+    "longitude": 30.0
   },
   "workTime": {
     "weekdays": {
@@ -60,17 +57,17 @@ Get the data for a tea shop by its `id`.
       "to": "22.00"
     }
   },
-  "phone": "+79585801991",
-  "site": "https://spb.moychay.ru",
+  "phone": "+7987654321",
+  "site": "https://spb.tea.ru",
   "links": [
     {
       "title": "Instagram",
-      "link": "https://www.instagram.com/moychayspb/",
+      "link": "https://www.instagram.com/tea",
       "icon_url": null
     },
     {
       "title": "Vk",
-      "link": "https://vk.com/moychayspb/",
+      "link": "https://vk.com/tea",
       "icon_url": null
     }
   ],
@@ -80,7 +77,7 @@ Get the data for a tea shop by its `id`.
 
 #### Get All Teahouses Data
 
-Get the data for all tea shops.
+Returns a json collection of data for all teahouses
 
 ##### Endpoint
 
