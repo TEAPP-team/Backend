@@ -77,7 +77,7 @@ Get the data for a tea shop by its `id`.
 
 #### Get All Teahouses Data
 
-Returns a json collection of data for all teahouses
+Returns a json collection of data for all teahouses.
 
 ##### Endpoint
 
