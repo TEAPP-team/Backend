@@ -23,7 +23,7 @@ The TEAPP API can return the following errors:
 | `404`       | Not found.                                                            |
 
 
-##Database
+## Database
 
 ![alt text](dbd.png "Database Diagram")
 
