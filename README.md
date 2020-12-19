@@ -25,7 +25,7 @@ The TEAPP API can return the following errors:
 
 ## Database
 
-![alt text](dbd.png "Database Diagram")
+![alt text](resources/img/dbd.png "Database Diagram")
 
 ## Requests
 
