@@ -2,16 +2,16 @@ package com.teapp.service
 
 import com.teapp.Config
 import com.teapp.models.Teahouse
-import com.teapp.models.User
-import com.teapp.models.UserConnections
-import com.teapp.models.UserCredentials
+//import com.teapp.models.User
+//import com.teapp.models.UserConnections
+//import com.teapp.models.UserCredentials
 import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.statements.api.ExposedBlob
+//import org.jetbrains.exposed.sql.statements.api.ExposedBlob
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
-import java.time.LocalDate
+//import java.time.LocalDate
 
-object TeaHouses : Table() {
+object Teahouses : Table() {
     val id: Column<Int> = integer("id").autoIncrement()
     val title: Column<String> = varchar("title", 45)
     val address: Column<String> = varchar("address", 200)
@@ -20,51 +20,52 @@ object TeaHouses : Table() {
     val phone: Column<String?> = varchar("phone", 15).nullable()
     val site: Column<String?> = varchar("site", 150).nullable()
 
-    override val primaryKey = PrimaryKey(id, name = "PK_TeaHouse_ID")
+    override val primaryKey = PrimaryKey(id, name = "PK_Teahouse_ID")
 }
 
-object Users : Table() {
-    val id: Column<Int> = integer("id").autoIncrement()
-    val firstName: Column<String> = varchar("firstname", 50)
-    val lastName: Column<String> = varchar("lastname", 50)
-    val avatar: Column<ExposedBlob> = blob("avatar")
-
-    override val primaryKey = PrimaryKey(TeaHouses.id, name = "PK_Person_ID")
-}
-
-object UserCredentials : Table() {
-    val id: Column<Int> = integer("id").autoIncrement()
-    val login: Column<String> = varchar("login", 30)
-    val password: Column<String> = varchar("password", 64)
-
-    override val primaryKey = PrimaryKey(TeaHouses.id, name = "PK_Credential_ID")
-}
-
-object UserConnections : Table() {
-    val id: Column<Int> = integer("id").autoIncrement()
-    val accessToken: Column<String> = varchar("access_token", 36)
-    //TODO Fill up parameter "expiredDate"
-    val expiredDate: Column<LocalDate>? = null/*varchar("exp_date", 30)*/
-    val userId: Column<Int> = integer("person_id")
-    val isLoggedOut: Column<Boolean> = bool("is_logged_out")
-}
+//object Users : Table() {
+//    val id: Column<Int> = integer("id").autoIncrement()
+//    val firstName: Column<String> = varchar("firstname", 50)
+//    val lastName: Column<String> = varchar("lastname", 50)
+//    val avatar: Column<ExposedBlob> = blob("avatar")
+//
+//    override val primaryKey = PrimaryKey(TeaHouses.id, name = "PK_Person_ID")
+//}
+//
+//object UserCredentials : Table() {
+//    val id: Column<Int> = integer("id").autoIncrement()
+//    val login: Column<String> = varchar("login", 30)
+//    val password: Column<String> = varchar("password", 64)
+//
+//    override val primaryKey = PrimaryKey(TeaHouses.id, name = "PK_Credential_ID")
+//}
+//
+//object UserConnections : Table() {
+//    val id: Column<Int> = integer("id").autoIncrement()
+//    val accessToken: Column<String> = varchar("access_token", 36)
+//    //TODO Fill up parameter "expiredDate"
+//    val expiredDate: Column<LocalDate>? = null/*varchar("exp_date", 30)*/
+//    val userId: Column<Int> = integer("person_id")
+//    val isLoggedOut: Column<Boolean> = bool("is_logged_out")
+//}
 
 object Links : Table() {
     val id: Column<Int> = integer("id").autoIncrement()
     val social_network_id: Column<Int> = (integer("social_network_id") references Social_Networks.id)
     val link: Column<String> = varchar("link", 300)
     val icon_url: Column<String?> = varchar("icon_url", 500).nullable()
-    val teahouse_id: Column<Int> = (integer("teahouse_id") references TeaHouses.id)
+    val teahouse_id: Column<Int> = (integer("teahouse_id") references Teahouses.id)
 
     override val primaryKey = PrimaryKey(id, name = "PK_Link_ID")
 }
-
 object Social_Networks : Table() {
     val id: Column<Int> = integer("id").autoIncrement()
     val social_network: Column<String> = varchar("social_network", 30)
 
     override val primaryKey = PrimaryKey(id, name = "PK_SocialNetwork_ID")
 }
+
+//    TODO: Add DB manipulations with auth
 
 object DatabaseFactory {
     init {
@@ -99,36 +100,36 @@ object DatabaseFactory {
         return socialNetworks
     }
 
-    //TODO Realize functions below, because they are just templates for testing---------------
-
-    fun getUserById(id: Int): User {
-        val user: User = User(1)
-        user.firstName = "John"
-        user.lastName = "Doe"
-        return user
-    }
-
-    fun getAllSessions(): ArrayList<UserConnections>? {
-        return null
-    }
-
-    fun getAllUsersCredentials(): ArrayList<UserCredentials> {
-        val credentials: UserCredentials = UserCredentials(0)
-        credentials.login = "qwe"
-        credentials.password = "asd"
-        val usersCredentials: ArrayList<UserCredentials> = arrayListOf(credentials)
-        for (i in 1..5) {
-            val credentials: UserCredentials = UserCredentials(i)
-            credentials.login = "qwe$i"
-            credentials.password = "asd$i"
-            usersCredentials.add(credentials)
-        }
-        return usersCredentials
-    }
-
-    fun getAmountOfSessions() = 6
-
-    //TODO Before here-----------------------------------------------------
+//    //TODO Realize functions below, because they are just templates for testing---------------
+//
+//    fun getUserById(id: Int): User {
+//        val user: User = User(1)
+//        user.firstName = "John"
+//        user.lastName = "Doe"
+//        return user
+//    }
+//
+//    fun getAllSessions(): ArrayList<UserConnections>? {
+//        return null
+//    }
+//
+//    fun getAllUsersCredentials(): ArrayList<UserCredentials> {
+//        val credentials: UserCredentials = UserCredentials(0)
+//        credentials.login = "qwe"
+//        credentials.password = "asd"
+//        val usersCredentials: ArrayList<UserCredentials> = arrayListOf(credentials)
+//        for (i in 1..5) {
+//            val credentials: UserCredentials = UserCredentials(i)
+//            credentials.login = "qwe$i"
+//            credentials.password = "asd$i"
+//            usersCredentials.add(credentials)
+//        }
+//        return usersCredentials
+//    }
+//
+//    fun getAmountOfSessions() = 6
+//
+//    //TODO Before here-----------------------------------------------------
 
     private fun getLinks(id: Int): MutableList<Teahouse.Link>? {
         var links: MutableList<Teahouse.Link>? = null
@@ -148,25 +149,25 @@ object DatabaseFactory {
     }
 
     fun getTeahouseById(teahouse: Teahouse): Boolean {
-        var isTeaHouseExist = false
+        var isTeahouseExist = false
         val id = teahouse.id
         transaction {
             addLogger(StdOutSqlLogger)
-            val teaHouseData = TeaHouses.select { TeaHouses.id eq id }.toList()
-            if (teaHouseData.size == 1) {
-                isTeaHouseExist = true
-                teaHouseData.forEach{ values->
-                    teahouse.title = values[TeaHouses.title]
-                    teahouse.address = values[TeaHouses.address]
-                    teahouse.coordinates.latitude = values[TeaHouses.latitude]
-                    teahouse.coordinates.longitude = values[TeaHouses.longitude]
-                    teahouse.phone = values[TeaHouses.phone]
-                    teahouse.site = values[TeaHouses.site]
+            val teahouseData = Teahouses.select { Teahouses.id eq id }.toList()
+            if (teahouseData.size == 1) {
+                isTeahouseExist = true
+                teahouseData.forEach{ values->
+                    teahouse.title = values[Teahouses.title]
+                    teahouse.address = values[Teahouses.address]
+                    teahouse.coordinates.latitude = values[Teahouses.latitude]
+                    teahouse.coordinates.longitude = values[Teahouses.longitude]
+                    teahouse.phone = values[Teahouses.phone]
+                    teahouse.site = values[Teahouses.site]
                     teahouse.workTime = getWorktime(id)
                     teahouse.links = getLinks(id)
                 }
             }
         }
-        return isTeaHouseExist
+        return isTeahouseExist
     }
 }
