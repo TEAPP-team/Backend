@@ -10,17 +10,19 @@ import io.ktor.gson.*
 import io.ktor.http.*
 import io.ktor.request.*
 import io.ktor.sessions.*
-import io.ktor.util.*
+import java.time.LocalDateTime
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
 data class UserSession(val token: String)
+data class Credentials(val login: String, val password: String)
 
 @Suppress("unused") // Referenced in application.conf
 @kotlin.jvm.JvmOverloads
 fun Application.module(testing: Boolean = false) {
     val dataFactory = DatabaseFactory
-    val sessionsList: MutableList<Session> = mutableListOf()
+    val authService = AuthService()
+    val userService = UserService()
     install(CallLogging)
     install(ContentNegotiation) {
         gson {
@@ -31,8 +33,8 @@ fun Application.module(testing: Boolean = false) {
     }
     install(DefaultHeaders)
     install(Sessions) {
-        cookie<UserSession>("SESSION_ID") {
-//            transform(SessionTransportTransformerMessageAuthentication(hex("6819b57a326945c1968f45236581")))
+        cookie<Cookie>("SESSION_ID") {
+//            Cookie.path =
         }
     }
     install(Routing) {
@@ -40,9 +42,9 @@ fun Application.module(testing: Boolean = false) {
             get("/teahouses/{id}") {
                 try {
                     val id = call.parameters["id"]!!.toInt()
-                    val teaHouse = Teahouse(id)
-                    if (teaHouse.fetchDataFromDB(dataFactory)) {
-                        call.respond(teaHouse)
+                    val teahouse = Teahouse(id)
+                    if (teahouse.fetchDataFromDB(dataFactory)) {
+                        call.respond(teahouse)
                     }
                 }
                 catch (invalidIdException: NumberFormatException) {}
@@ -50,58 +52,52 @@ fun Application.module(testing: Boolean = false) {
         }
         route("/") {
             get {
-                val greeting = "Welcome to Teapp Web-Server!"
-//                val cookie = call.sessions.get<UserSession>() ?: "Welcome to Teapp Web-Server"
-                call.respondText(greeting)
+                call.respondText("Welcome to Teapp Web-Server!")
             }
         }
         route("/login") {
             post {
-                val requestContentType = call.request.headers["Content-Type"]
-                if (requestContentType is String) {
-                    if (requestContentType == "application/x-www-form-urlencoded" || requestContentType.contains("multipart/form-data")) {
-                        try {
-//                            if(!Auth().isAuthenticated(call.sessions.get("SESSION_ID"))) {
-//                                TODO: If is authenticated don't generate new token
+                if (!authService.isAuthenticated(call.sessions.get("SESSION_ID"))) {
+                    val requestContentType = call.request.headers["Content-Type"]
+                    if (requestContentType is String) {
+                        if (requestContentType == "application/x-www-form-urlencoded" || requestContentType.contains("multipart/form-data")) {
+                            try {
                                 val params = call.receive<Parameters>()
-                                val requestLogin = params["login"] ?: throw NullPointerException("Login wasn't set")
-                                val requestPassword = params["password"] ?: throw NullPointerException("Password wasn't set")
-//                            val authToken = Auth().authenticate(requestLogin, requestPassword)
-                                val userSession = Auth().authenticate(requestLogin, requestPassword)
-                                sessionsList.add(userSession)
-                                val authToken = userSession.token
-                                println(authToken)
+                                val authToken = authService.authenticate(params["login"]!!, params["password"]!!)
                                 call.sessions.set("SESSION_ID", UserSession(authToken))
-                                call.respondRedirect("/")
-//                            }
-//                            else
-//                                call.respond("Authenticated yet!")
+                                call.respondRedirect("/profile")
+                            }
+                            catch (ex: NullPointerException) {
+                                call.respond(HttpStatusCode.BadRequest, ex.message ?: "Login or password wasn't set")
+                            }
                         }
-                        catch(ex: NullPointerException) {
-                            call.respond(HttpStatusCode.BadRequest, ex.message!!)
-                        }
+                        else
+                            if (listOf("application/json", "text/plain").contains(requestContentType)) {
+                                try {
+                                    val credentials = call.receive<Credentials>()
+                                    val authToken = authService.authenticate(credentials.login, credentials.password)
+                                    val newCookie = Cookie(name = "SESSION_ID", value = authToken)
+                                    call.sessions.set(newCookie)
+                                    call.respondRedirect("/profile")
+                                }
+                                catch (ex: NullPointerException) {
+                                    call.respond(HttpStatusCode.BadRequest, ex.message ?: "Login or password wasn't set!")
+                                }
+                            }
+                            else
+                                call.respond(HttpStatusCode.UnsupportedMediaType)
                     }
-                    else
-                        if (listOf("application/json", "text/plain").contains(requestContentType)) {
-//                            TODO: Realize auth
-                            call.respond(HttpStatusCode.OK)
-                        }
-                    else
-                        call.respond(HttpStatusCode.UnsupportedMediaType)
+                }
+                else {
+                    call.respondRedirect("/profile")
                 }
             }
         }
         route("/profile") {
             get {
                 val cookie = call.sessions.get("SESSION_ID")
-                if(cookie is UserSession) {
-                    try {
-                        val user = Auth().checkAuthenticate(cookie.token, sessionsList)!!
-                        call.respondText("Firstname: ${user.firstName}\nLastname: ${user.lastName}")
-                    }
-                    catch (ex: NullPointerException) {
-                        call.respond(HttpStatusCode.Forbidden, "Access denied!")
-                    }
+                if (authService.isAuthenticated(cookie)) {
+                    call.respond(userService.getUser(cookie!!, dataFactory))
                 }
                 else
                     call.respond(HttpStatusCode.Forbidden, "Access denied!")
