@@ -1,7 +1,9 @@
 package com.teapp.service
 
 import com.teapp.Config
+import com.teapp.models.Session
 import com.teapp.models.Teahouse
+import com.teapp.models.User
 import com.teapp.models.Comment
 import com.teapp.models.Post
 import org.jetbrains.exposed.sql.*
@@ -9,9 +11,16 @@ import org.jetbrains.exposed.sql.statements.api.ExposedBlob
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.*
+import java.math.BigInteger
+import java.security.MessageDigest
+
+fun String.sha256(): String {
+    val md = MessageDigest.getInstance("SHA-256")
+    return BigInteger(1, md.digest(toByteArray())).toString(16).padStart(32, '0')
+}
 
 object Teahouses : Table() {
-    val id: Column<Int> = integer("id").autoIncrement()
+    val id: Column<Int> = integer("id")
     val title: Column<String> = varchar("title", 45)
     val address: Column<String> = varchar("address", 200)
     val longitude: Column<Double?> = double("longitude").nullable()
@@ -23,17 +32,17 @@ object Teahouses : Table() {
 }
 
 object Links : Table() {
-    val id: Column<Int> = integer("id").autoIncrement()
-    val social_network_id: Column<Int> = (integer("social_network_id") references Social_Networks.id)
+    val id: Column<Int> = integer("id")
+    val social_network_id: Column<Int> = integer("social_network_id") references Social_Networks.id
     val link: Column<String> = varchar("link", 300)
     val icon_url: Column<String?> = varchar("icon_url", 500).nullable()
-    val teahouse_id: Column<Int> = (integer("teahouse_id") references Teahouses.id)
+    val teahouse_id: Column<Int> = integer("teahouse_id") references Teahouses.id
 
     override val primaryKey = PrimaryKey(id, name = "PK_Link_ID")
 }
 
 object Social_Networks : Table() {
-    val id: Column<Int> = integer("id").autoIncrement()
+    val id: Column<Int> = integer("id")
     val social_network: Column<String> = varchar("social_network", 30)
 
     override val primaryKey = PrimaryKey(id, name = "PK_SocialNetwork_ID")
@@ -54,7 +63,34 @@ object Comments : Table() {
     val post_id: Column<Int?> = integer("post_id").nullable()
     val person_id: Column<Int?> = integer("person_id").nullable()
 
-    override val primaryKey = PrimaryKey(id, name = "PK_Posts_ID")
+    override val primaryKey = PrimaryKey(id, name = "PK_Comments_ID")
+}
+
+object Person : Table() {
+    val id: Column<Int> = integer("id")
+    val firstName: Column<String> = varchar("firstname", 50)
+    val lastName: Column<String?> = varchar("lastname", 50).nullable()
+    val avatar: Column<ExposedBlob?> = blob("avatar").nullable()
+
+    override val primaryKey = PrimaryKey(id, name = "PK_Person_ID")
+}
+
+object Credentials : Table() {
+    val id: Column<Int> = integer("id") references Person.id
+    val login: Column<String> = varchar("login", 30)
+    val password: Column<String> = varchar("password", 64)
+
+    override val primaryKey = PrimaryKey(id, name = "PK_Credentials_ID")
+}
+
+object Sessions : Table() {
+    val id: Column<Int> = integer("id")
+    val access_token: Column<String> = varchar("access_token", 36).uniqueIndex()
+    val exp_date: Column<String> = varchar("exp_date", 30)
+    val person_id: Column<Int> = integer("person_id")
+    val isLoggedOut: Column<Boolean> = bool("is_logged_out").default(false)
+
+    override val primaryKey = PrimaryKey(id, name = "PK_Sessions_ID")
 }
 
 object DatabaseFactory {
@@ -66,13 +102,12 @@ object DatabaseFactory {
         val workTime = Teahouse.WorkTime()
         TransactionManager.current().exec(
             "SELECT COUNT(*) AS rowcount,\n" +
-                    "    DATE_FORMAT(Worktime.weekdays_opening, '%H.%i') as weekdays_opening,\n" +
-                    "    DATE_FORMAT(Worktime.weekdays_closing, '%H.%i') as weekdays_closing,\n" +
-                    "    DATE_FORMAT(Worktime.weekend_opening, '%H.%i') as weekend_opening,\n" +
-                    "    DATE_FORMAT(Worktime.weekend_closing, '%H.%i') as weekend_closing\n" +
-                    "FROM Worktime INNER JOIN Teahouses on Teahouses.Worktime_id = Worktime.id\n" +
-                    "WHERE Teahouses.id = $id;"
-        ) { rs ->
+                "    DATE_FORMAT(Worktime.weekdays_opening, '%H.%i') as weekdays_opening,\n" +
+                "    DATE_FORMAT(Worktime.weekdays_closing, '%H.%i') as weekdays_closing,\n" +
+                "    DATE_FORMAT(Worktime.weekend_opening, '%H.%i') as weekend_opening,\n" +
+                "    DATE_FORMAT(Worktime.weekend_closing, '%H.%i') as weekend_closing\n" +
+                "FROM Worktime INNER JOIN Teahouses on Teahouses.Worktime_id = Worktime.id\n" +
+                "WHERE Teahouses.id = $id;") { rs ->
             if (rs.next() && rs.getInt("rowcount") == 1) {
                 workTime.weekdays.from = rs.getString("weekdays_opening")
                 workTime.weekdays.to = rs.getString("weekdays_closing")
@@ -112,11 +147,11 @@ object DatabaseFactory {
         var isTeahouseExist = false
         val id = teahouse.id
         transaction {
-            addLogger(StdOutSqlLogger)
+//            addLogger(StdOutSqlLogger)
             val teahouseData = Teahouses.select { Teahouses.id eq id }.toList()
             if (teahouseData.size == 1) {
                 isTeahouseExist = true
-                teahouseData.forEach { values ->
+                teahouseData.forEach{ values->
                     teahouse.title = values[Teahouses.title]
                     teahouse.address = values[Teahouses.address]
                     teahouse.coordinates.latitude = values[Teahouses.latitude]
@@ -129,6 +164,79 @@ object DatabaseFactory {
             }
         }
         return isTeahouseExist
+    }
+
+    fun getAllTeahouses(db: DatabaseFactory) : MutableList<Teahouse> {
+        val allhouses : MutableList<Teahouse> = mutableListOf()
+        transaction {
+//            addLogger(StdOutSqlLogger)
+            for (th in Teahouses.selectAll()){
+                val th_i = Teahouse(th[Teahouses.id])
+                th_i.fetchDataFromDB(db)
+                allhouses.add(th_i)
+            }
+        }
+        return allhouses
+    }
+
+    fun getUserIdByCredentials(login: String, password: String): Int? {
+        val passwordHash = password.sha256()
+        var userId: Int? = null
+        transaction {
+//            addLogger(StdOutSqlLogger)
+            val userIDList = Credentials.select{Credentials.login.eq(login)and Credentials.password.eq(passwordHash)}.toList()
+            if (userIDList.isNotEmpty()) {
+                userId = userIDList[0][Credentials.id]
+            }
+        }
+        return userId
+    }
+
+//    TODO: Set expiring date
+    fun addSession(session: Session) {
+        transaction {
+//            addLogger(StdOutSqlLogger)
+            Sessions.insert {
+                it[access_token] = session.token
+                it[person_id] = session.userId
+            }
+        }
+    }
+
+//    TODO: Check expiring date
+    fun isAuthenticated(token: String): Int? {
+        var isAuthenticated: Int? = null
+        transaction {
+//            addLogger(StdOutSqlLogger)
+            val queryResult = Sessions.select {Sessions.access_token.eq(token) and Sessions.isLoggedOut.eq(false)}
+            if (queryResult.count().toInt() == 1) {
+                isAuthenticated = queryResult.toList()[0][Sessions.person_id]
+            }
+        }
+        return isAuthenticated
+    }
+
+    fun getUserById(userId: Int): User {
+        var user: User? = null
+        transaction {
+//            addLogger(StdOutSqlLogger)
+            val queryResultList =  Person.select{Person.id.eq(userId)}.toList()
+            user = User(
+                queryResultList[0][Person.id],
+                queryResultList[0][Person.firstName],
+                queryResultList[0][Person.lastName]
+            )
+        }
+        return user!!
+    }
+
+    fun logout(token: String) {
+        transaction {
+//            addLogger(StdOutSqlLogger)
+            Sessions.update({ Sessions.access_token eq token}) {
+                it[isLoggedOut] = true
+            }
+        }
     }
 
     fun getPostById(post: Post): Boolean {
