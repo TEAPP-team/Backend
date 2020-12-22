@@ -16,12 +16,15 @@ fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
 data class UserSession(val token: String)
 data class Credentials(val login: String, val password: String)
+data class NewComment(val text: String)
+data class NewPost(val header: String, val description: String)
 
 @kotlin.jvm.JvmOverloads
 fun Application.module(testing: Boolean = false) {
     val dataFactory = DatabaseFactory
     val authService = AuthService()
     val userService = UserService()
+    val adminService = AdminService()
     install(CallLogging)
     install(ContentNegotiation) {
         gson {
@@ -51,7 +54,9 @@ fun Application.module(testing: Boolean = false) {
                         call.respond(teahouse)
                     }
                 }
-                catch (invalidIdException: NumberFormatException) {}
+                catch (invalidIdException: NumberFormatException) {
+                    call.respond(HttpStatusCode.BadRequest)
+                }
             }
             get("/teahouses/all") {
                 call.respond(dataFactory.getAllTeahouses(dataFactory))
@@ -63,32 +68,35 @@ fun Application.module(testing: Boolean = false) {
                     if (post.fetchDataFromDB(dataFactory)) {
                         call.respond(post)
                     }
-                } catch (invalidIdException: NumberFormatException) {
+                }
+                catch (invalidIdException: NumberFormatException) {
+                    call.respond(HttpStatusCode.BadRequest)
                 }
             }
-
-            get("/posts_all/") {
+            get("/posts/all") {
                 try {
                     val posts = mutableListOf<Post>()
                     if (dataFactory.getAllPosts(posts)) {
                         call.respond(posts)
                     }
-                } catch (invalidIdException: NumberFormatException) {
+                }
+                catch (invalidIdException: NumberFormatException) {
+                    call.respond(HttpStatusCode.BadRequest)
                 }
             }
-
-            get("/comments/{id}") {
-                try {
-                    val id = call.parameters["id"]!!.toInt()
-                    val comment = Comment(id)
-                    if (comment.fetchDataFromDB(dataFactory)) {
-                        call.respond(comment)
-                    }
-                } catch (invalidIdException: NumberFormatException) {
-                }
-            }
-
-            get("/comments_by_post/{id}") {
+//            get("/comments/{id}") {
+//                try {
+//                    val id = call.parameters["id"]!!.toInt()
+//                    val comment = Comment(id)
+//                    if (comment.fetchDataFromDB(dataFactory)) {
+//                        call.respond(comment)
+//                    }
+//                }
+//                catch (invalidIdException: NumberFormatException) {
+//                    call.respond(HttpStatusCode.BadRequest)
+//                }
+//            }
+            get("/posts/{id}?comments=all") {
                 try {
                     val id = call.parameters["id"]!!.toInt()
                     val comments = mutableListOf<Comment>()
@@ -96,6 +104,7 @@ fun Application.module(testing: Boolean = false) {
                         call.respond(comments)
                     }
                 } catch (invalidIdException: NumberFormatException) {
+                    call.respond(HttpStatusCode.BadRequest)
                 }
             }
         }
@@ -152,6 +161,70 @@ fun Application.module(testing: Boolean = false) {
                 val userId = authService.isAuthenticated(cookie, dataFactory)
                 if (userId != null) {
                     call.respond(userService.getUserById(userId, dataFactory))
+                }
+                else
+                    call.respond(HttpStatusCode.Forbidden, "Access denied!")
+            }
+        }
+        route("/post/{id}/addComment") {
+            post{
+                val cookie = call.sessions.get("SESSION_ID")
+                val userId = authService.isAuthenticated(cookie, dataFactory)
+                if (userId != null) {
+                    try {
+                        val postId = call.parameters["id"]!!.toInt()
+                        val requestContentType = call.request.headers["Content-Type"]
+                        if (listOf("application/json", "text/plain").contains(requestContentType)) {
+                            try {
+                                val comment = call.receive<NewComment>()
+                                val newComment = Comment(0)
+                                newComment.message = comment.text
+                                newComment.person_id = userId
+                                newComment.post_id = postId
+                                userService.addComment(newComment, dataFactory)
+                                call.respond(HttpStatusCode.Created)
+                            }
+                            catch (ex: NullPointerException) {
+                                call.respond(HttpStatusCode.BadRequest, ex.message ?: "Comment wasn't sent!")
+                            }
+                        }
+                        else
+                            call.respond(HttpStatusCode.UnsupportedMediaType)
+                    }
+                    catch (invalidIdException: NumberFormatException) {}
+                        call.respond(HttpStatusCode.BadRequest)
+                }
+                else
+                    call.respond(HttpStatusCode.Forbidden, "Access denied!")
+            }
+        }
+        route("/admin/addPost") {
+            post{
+                val cookie = call.sessions.get("SESSION_ID")
+                val userId = authService.isAuthenticated(cookie, dataFactory)
+                if (userId != null) {
+                    try {
+                        val requestContentType = call.request.headers["Content-Type"]
+                        if (listOf("application/json", "text/plain").contains(requestContentType)) {
+                            try {
+                                val post = call.receive<NewPost>()
+                                val newPost = Post(0)
+                                newPost.header = post.header
+                                newPost.description = post.description
+                                if(adminService.addPost(userId, newPost, dataFactory))
+                                    call.respond(HttpStatusCode.Created)
+                                else
+                                    call.respond(HttpStatusCode.Forbidden, "Access denied!")
+                            }
+                            catch (ex: NullPointerException) {
+                                call.respond(HttpStatusCode.BadRequest, ex.message ?: "Comment wasn't sent!")
+                            }
+                        }
+                        else
+                            call.respond(HttpStatusCode.UnsupportedMediaType)
+                    }
+                    catch (invalidIdException: NumberFormatException) {}
+                    call.respond(HttpStatusCode.BadRequest)
                 }
                 else
                     call.respond(HttpStatusCode.Forbidden, "Access denied!")

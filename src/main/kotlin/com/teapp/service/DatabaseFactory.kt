@@ -6,6 +6,7 @@ import com.teapp.models.Teahouse
 import com.teapp.models.User
 import com.teapp.models.Comment
 import com.teapp.models.Post
+import com.teapp.service.Sessions.default
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.api.ExposedBlob
 import org.jetbrains.exposed.sql.transactions.TransactionManager
@@ -71,6 +72,7 @@ object Person : Table() {
     val firstName: Column<String> = varchar("firstname", 50)
     val lastName: Column<String?> = varchar("lastname", 50).nullable()
     val avatar: Column<ExposedBlob?> = blob("avatar").nullable()
+    val is_admin: Column<Boolean> = bool("is_admin").default(false)
 
     override val primaryKey = PrimaryKey(id, name = "PK_Person_ID")
 }
@@ -358,5 +360,17 @@ object DatabaseFactory {
                 }
             }
         }
+    }
+
+    fun isAdmin(userId: Int): Boolean {
+        var isAdmin = false
+        transaction {
+            addLogger(StdOutSqlLogger)
+            val queryResult = Person.select{Person.id.eq(userId) and Person.is_admin.eq(true)}
+            if(queryResult.count().toInt() == 1) {
+                isAdmin = true
+            }
+        }
+        return isAdmin
     }
 }
