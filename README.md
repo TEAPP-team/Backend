@@ -21,6 +21,7 @@ The TEAPP API can return the following errors:
 | ----------- | --------------------------------------------------------------------- |
 | `403`       | Reached request limit to the API.                                     |
 | `404`       | Not found.                                                            |
+| `415`       | Unsupported media type.                                               |
 
 
 ## Database
@@ -82,6 +83,17 @@ Returns a json collection of data for all teahouses.
 ##### Endpoint
 
 `GET /api/teahouses/all`
+
+#### Post Login
+
+Do login if POST Request's body contains valid login-password pair
+
+Return `403` error if login-password pair is not valid or was not set.
+Return `415` error if request body is unreadable.
+
+#### Endpoint
+
+`POST /login`
 
 #### Notes
 
