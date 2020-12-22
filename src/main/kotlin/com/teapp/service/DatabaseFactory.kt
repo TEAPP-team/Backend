@@ -4,10 +4,14 @@ import com.teapp.Config
 import com.teapp.models.Session
 import com.teapp.models.Teahouse
 import com.teapp.models.User
+import com.teapp.models.Comment
+import com.teapp.models.Post
+import com.teapp.service.Sessions.default
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.api.ExposedBlob
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
+import java.util.*
 import java.math.BigInteger
 import java.security.MessageDigest
 
@@ -45,11 +49,30 @@ object Social_Networks : Table() {
     override val primaryKey = PrimaryKey(id, name = "PK_SocialNetwork_ID")
 }
 
+object Posts : Table() {
+    val id: Column<Int> = integer("id").autoIncrement()
+    val header: Column<String> = varchar("header", 255)
+    val description: Column<String> = text("description")
+    val image: Column<ExposedBlob?> = blob("image").nullable()
+
+    override val primaryKey = PrimaryKey(id, name = "PK_Posts_ID")
+}
+
+object Comments : Table() {
+    val id: Column<Int> = integer("id").autoIncrement()
+    val message: Column<String> = text("message")
+    val post_id: Column<Int?> = integer("post_id").nullable()
+    val person_id: Column<Int?> = integer("person_id").nullable()
+
+    override val primaryKey = PrimaryKey(id, name = "PK_Comments_ID")
+}
+
 object Person : Table() {
     val id: Column<Int> = integer("id")
     val firstName: Column<String> = varchar("firstname", 50)
     val lastName: Column<String?> = varchar("lastname", 50).nullable()
     val avatar: Column<ExposedBlob?> = blob("avatar").nullable()
+    val is_admin: Column<Boolean> = bool("is_admin").default(false)
 
     override val primaryKey = PrimaryKey(id, name = "PK_Person_ID")
 }
@@ -148,7 +171,7 @@ object DatabaseFactory {
     fun getAllTeahouses(db: DatabaseFactory) : MutableList<Teahouse> {
         val allhouses : MutableList<Teahouse> = mutableListOf()
         transaction {
-            addLogger(StdOutSqlLogger)
+//            addLogger(StdOutSqlLogger)
             for (th in Teahouses.selectAll()){
                 val th_i = Teahouse(th[Teahouses.id])
                 th_i.fetchDataFromDB(db)
@@ -216,5 +239,138 @@ object DatabaseFactory {
                 it[isLoggedOut] = true
             }
         }
+    }
+
+    fun getPostById(post: Post): Boolean {
+        var isPostExist = false
+        transaction {
+            addLogger(StdOutSqlLogger)
+            val postsList = Posts.select { Posts.id eq post.id }.toList()
+            if (postsList.size == 1) {
+                post.header = postsList[0][Posts.header]
+                post.description = postsList[0][Posts.description]
+                if (postsList[0][Posts.image] != null) {
+                    post.image = Base64.getEncoder().encodeToString(postsList[0][Posts.image]!!.bytes)
+                }
+                TransactionManager.current().exec(
+                    "SELECT date FROM Posts WHERE id = ${post.id};"
+                ) { rs ->
+                    rs.next()
+                    post.date = rs.getString("date")
+                }
+                isPostExist = true
+            }
+        }
+        return isPostExist
+    }
+
+    fun getCommentById(comment: Comment): Boolean {
+        var isCommentExist = false
+        transaction {
+            addLogger(StdOutSqlLogger)
+            val commentssList = Comments.select { Comments.id eq comment.id }.toList()
+            if (commentssList.size == 1) {
+                comment.message = commentssList[0][Comments.message]
+                comment.post_id = commentssList[0][Comments.post_id]
+                comment.person_id = commentssList[0][Comments.person_id]
+                TransactionManager.current().exec(
+                    "SELECT date FROM Comments WHERE id = ${comment.id};"
+                ) { rs ->
+                    rs.next()
+                    comment.date = rs.getString("date")
+                }
+                isCommentExist = true
+            }
+        }
+        return isCommentExist
+    }
+
+    fun getAllPosts(posts: MutableList<Post>): Boolean{
+        var isPostsExist = false
+        transaction {
+            addLogger(StdOutSqlLogger)
+            val postsList = Posts.selectAll().toList()
+            postsList.forEach() { post_data ->
+                val post = Post(post_data[Posts.id])
+                post.header = post_data[Posts.header]
+                post.description = post_data[Posts.description]
+                if (postsList[0][Posts.image] != null) {
+                    post.image = Base64.getEncoder().encodeToString(post_data[Posts.image]!!.bytes)
+                }
+                TransactionManager.current().exec(
+                    "SELECT date FROM Posts WHERE id = ${post.id};"
+                ) { rs ->
+                    rs.next()
+                    post.date = rs.getString("date")
+                }
+                posts.add(post)
+                isPostsExist = true
+            }
+        }
+        return isPostsExist
+    }
+
+    fun getCommentByPost(post: Post, comments: MutableList<Comment>): Boolean {
+        var isCommentExist = false
+        transaction {
+            addLogger(StdOutSqlLogger)
+            val commentList = Comments.select { Comments.post_id eq post.id }.toList()
+            commentList.forEach { comment_data ->
+                val comment = Comment(0)
+                comment.id = comment_data[Comments.id]
+                comment.message = comment_data[Comments.message]
+                comment.post_id = comment_data[Comments.post_id]
+                comment.person_id = comment_data[Comments.person_id]
+                TransactionManager.current().exec(
+                    "SELECT date FROM Comments WHERE id = ${comment.id};"
+                ) { rs ->
+                    rs.next()
+                    comment.date = rs.getString("date")
+                }
+                isCommentExist = true
+                comments.add(comment)
+            }
+        }
+        return isCommentExist
+    }
+
+    fun addPost(post: Post) {
+        transaction {
+            addLogger(StdOutSqlLogger)
+            Posts.insert {
+                it[header] = post.header
+                it[description] = post.description
+                if (post.image != null) {
+                    it[image] = ExposedBlob(Base64.getDecoder().decode(post.image))
+                }
+            }
+        }
+    }
+
+    fun addComment(comment: Comment) {
+        transaction {
+            addLogger(StdOutSqlLogger)
+            Comments.insert {
+                it[message] = comment.message
+                if (comment.person_id != null) {
+                    it[person_id] = comment.person_id
+                }
+                if (comment.post_id != null) {
+                    it[post_id] = comment.post_id
+                }
+            }
+        }
+    }
+
+    fun isAdmin(userId: Int): Boolean {
+        var isAdmin = false
+        transaction {
+            addLogger(StdOutSqlLogger)
+            val queryResult = Person.select{Person.id.eq(userId) and Person.is_admin.eq(true)}
+            if(queryResult.count().toInt() == 1) {
+                isAdmin = true
+            }
+        }
+        return isAdmin
     }
 }

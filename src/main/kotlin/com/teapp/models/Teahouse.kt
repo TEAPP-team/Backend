@@ -17,7 +17,7 @@ data class Teahouse(val id: Int) {
         var longitude: Double? = null
     }
 
-    class WorkTime{
+    class WorkTime {
         class DayWorkTime {
             var from: String? = null
             var to: String? = null
