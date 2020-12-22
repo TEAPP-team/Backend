@@ -7,8 +7,8 @@ import io.ktor.features.*
 import io.ktor.gson.*
 import io.ktor.response.*
 import io.ktor.routing.*
-import main.kotlin.com.teapp.models.Comment
-import main.kotlin.com.teapp.models.Post
+import com.teapp.models.Comment
+import com.teapp.models.Post
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 

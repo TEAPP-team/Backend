@@ -2,8 +2,8 @@ package com.teapp.service
 
 import com.teapp.Config
 import com.teapp.models.Teahouse
-import main.kotlin.com.teapp.models.Comment
-import main.kotlin.com.teapp.models.Post
+import com.teapp.models.Comment
+import com.teapp.models.Post
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.api.ExposedBlob
 import org.jetbrains.exposed.sql.transactions.TransactionManager
