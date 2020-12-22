@@ -88,13 +88,30 @@ Returns a json collection of data for all teahouses.
 
 Do login if POST Request's body contains valid login-password pair
 
-Return `403` error if login-password pair is not valid or was not set.
+Returns `403` error if login-password pair is not valid or was not set.
 
-Return `415` error if request body is unreadable.
+Returns `415` error if request body is unreadable.
 
 #### Endpoint
 
 `POST /login`
+
+#### Get profile
+
+Returns a json data about logged in user
+
+#### Endpoint
+
+`GET /profile`
+
+#### Example Response
+
+```
+{
+  "firstname": "John",
+  "lastname": "Doe";
+}
+```
 
 #### Notes
 
